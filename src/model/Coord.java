@@ -9,8 +9,7 @@ public class Coord {
 		this.y = y;
 	}
 	public Coord(FloatCoord copy){
-		this.x = Math.round(copy.x);
-		this.y = Math.round(copy.y);
+		this(Math.round(copy.x), Math.round(copy.y));
 	}
 	@Override
 	public boolean equals(Object other){

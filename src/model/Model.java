@@ -87,6 +87,7 @@ public class Model {
 		removeQueue = new LinkedList<>();
 		moveQueue = new LinkedList<>();
 		player = new Player(){{ speed = 1; }};
+		add(new StandardEvilProjectile(new Coord(-100, -100), 10, 10, 120));
 	}
 
 	public void tick(IController controller) {

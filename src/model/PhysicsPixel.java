@@ -1,6 +1,7 @@
 package model;
 
 import java.awt.Color;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -11,7 +12,9 @@ class PhysicsPixel {
 	Color color;
 	int priority;
 	int collisionLayer;
-	boolean dead;
+	
+	protected boolean dead;
+	
 	PhysicsPixel(Coord pos, Color color, int priority, int collisionLayer) {
 		if (pos == null) throw new IllegalArgumentException("pos is null");
 		this.pos = pos;
@@ -20,6 +23,7 @@ class PhysicsPixel {
 		this.collisionLayer = collisionLayer;
 		this.dead = false;
 	}
+	
 	void tick(Model model) {}
 	void die(Model model) {
 		if (!dead) model.queueRemove(this);
@@ -45,36 +49,83 @@ class TrailPixel extends PhysicsPixel {
 abstract class Projectile extends TrailPixel {
 	protected FloatCoord truePos;
 	protected List<Integer> hitLayers;
+	
 	Projectile(Coord pos, Color color, int priority, int collisionLayer, int life, List<Integer> hitLayers) {
 		super(pos, color, priority, collisionLayer, life);
 		this.hitLayers = hitLayers;
+		this.truePos = new FloatCoord(pos);
 	}
 
 	@Override
 	void tick(Model model) {
 		super.tick(model);
-		truePos = move();
-		Coord newPos = new Coord(truePos);
-		if (!dead && !pos.equals(newPos)) {
-			//float distance = 
-			passThrough(pos);
-			model.queueMove(this, newPos);
+		FloatCoord oldPos = truePos;
+		FloatCoord newPos = move();
+		Coord newIntPos = new Coord(newPos);
+		if (!dead && !pos.equals(newIntPos)) {
+			float distX = (newPos.x - oldPos.x);
+			float distY = (newPos.y - oldPos.y);
+			float distance = (float)Math.sqrt(distX * distX + distY * distY);
+			float incX = distX / distance;
+			float incY = distY / distance;
+			float x = oldPos.x;
+			float y = oldPos.y;
+			
+			for(int i = 0; i <= distance; i++){
+				x += incX;
+				y += incY;
+				check(model, new Coord(new FloatCoord(x, y)));
+				if(dead) break;
+			}
+			
+			if(!dead){
+				truePos = newPos;
+				model.queueMove(this, newIntPos);
+			}
 		}
 	}
+	private void check(Model model, Coord pos){
+		LinkedList<PhysicsPixel> hitTotal = new LinkedList<>();
+		for(Integer layer : hitLayers){
+			hitTotal.addAll(model.collision(pos, layer));
+		}
+		if(!hitTotal.isEmpty()) hit(model, hitTotal);
+		else passThrough(model, pos);
+	}
 
-	protected void passThrough(Coord pos) {}
-	protected void hit() {}
+	protected void passThrough(Model model, Coord pos) {}
+	/**
+	 * 
+	 * @param hit called in order of collision layers, no specific ordering within each layer. Can be mutated (pop recommended).
+	 */
+	protected void hit(Model model, LinkedList<PhysicsPixel> hit) {}
 	protected FloatCoord move() {
 		return truePos;
 	}
 }
 
-class EvilProjectile extends Projectile {
-	EvilProjectile(Coord pos, int life) {
+class StandardEvilProjectile extends Projectile {
+	protected float vX, vY;
+	StandardEvilProjectile(Coord pos, float vX, float vY, int life) {
 		super(pos, Color.ORANGE, 5, Model.LAYER_EVIL_PROJECTILE, life, new LinkedList<Integer>(){{ 
 			push(Model.LAYER_GOOD_PLAYER); 
 			push(Model.LAYER_GOOD_BULLET);
 		}});
+		this.vX = vX;
+		this.vY = vY;
+	}
+	@Override
+	protected void passThrough(Model model, Coord pos){
+		model.queueAdd(new EvilTrail(pos, (int)(Math.random() * 20 + 20)));
+	}
+	@Override
+	protected void hit(Model model, LinkedList<PhysicsPixel> hit){
+		hit.pop().die(model);
+		this.die(model);
+	}
+	@Override
+	protected FloatCoord move() {
+		return new FloatCoord(truePos.x + vX, truePos.y + vY);
 	}
 }
 

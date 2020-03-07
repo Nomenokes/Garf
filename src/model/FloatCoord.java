@@ -8,6 +8,9 @@ public class FloatCoord {
 		this.x = x;
 		this.y = y;
 	}
+	public FloatCoord(Coord copy){
+		this(copy.x, copy.y);
+	}
 	@Override
 	public boolean equals(Object other){
 		if(other == null || other.getClass() != getClass()) return false;
