@@ -10,6 +10,7 @@ import java.util.function.Function;
 class PhysicsPixel {
 	//package-private variables should be open to access by other classes
 	Coord pos;
+	//pos should only be changed by the model, not by a pixel itself
 	Color color;
 	int priority;
 	int collisionLayer;
@@ -30,7 +31,13 @@ class PhysicsPixel {
 	void die(Model model) {
 		if (!dead) model.queueRemove(this);
 		dead = true;
+		System.out.println("ded");
 	}
+	
+//	@Override
+//	public boolean equals(Object other){
+//		return this == other;
+//	}
 }
 
 class TrailPixel extends PhysicsPixel {
@@ -57,91 +64,35 @@ abstract class TrailingPixel extends TrailPixel {
 	@Override
 	void tick(Model model){
 		super.tick(model);
-		FloatCoord oldPos = truePos;
-		FloatCoord newPos = move();
-		Coord newIntPos = new Coord(newPos);
-		if (!dead && !pos.equals(newIntPos)) {
-			float distX = (newPos.x - oldPos.x);
-			float distY = (newPos.y - oldPos.y);
-			float distance = (float)Math.sqrt(distX * distX + distY * distY);
-			float incX = distX / distance;
-			float incY = distY / distance;
-			float x = oldPos.x;
-			float y = oldPos.y;
+		if(!dead) {
+			FloatCoord oldPos = truePos;
+			FloatCoord newPos = move();
+			Coord newIntPos = new Coord(newPos);
+			if (!pos.equals(newIntPos)) {
+				float distX = (newPos.x - oldPos.x);
+				float distY = (newPos.y - oldPos.y);
+				float distance = (float)Math.sqrt(distX * distX + distY * distY);
+				float incX = distX / distance;
+				float incY = distY / distance;
+				float x = oldPos.x;
+				float y = oldPos.y;
 
-			for(int i = 0; i <= distance; i++){
-				x += incX;
-				y += incY;
-				passThrough(model, new Coord(new FloatCoord(x, y)));
-				if(dead) break;
-			}
+				for (int i = 0; i <= distance; i++) {
+					x += incX;
+					y += incY;
+					passThrough(model, new Coord(new FloatCoord(x, y)));
+					if (dead) break;
+				}
 
-			if(!dead){
-				truePos = newPos;
-				model.queueMove(this, newIntPos);
+				if (!dead) {
+					truePos = newPos;
+					model.queueMove(this, newIntPos);
+				}
 			}
 		}
 	}
 	
 	protected abstract void passThrough(Model model, Coord pos);
 
-	protected FloatCoord move() {
-		return truePos;
-	}
-}
-
-abstract class Projectile extends TrailingPixel {
-	protected List<Integer> hitLayers;
-	
-	Projectile(Coord pos, Color color, int priority, int collisionLayer, int life, List<Integer> hitLayers) {
-		super(pos, color, priority, collisionLayer, life);
-		this.hitLayers = hitLayers;
-	}
-	
-	@Override
-	protected void passThrough(Model model, Coord pos){
-		LinkedList<PhysicsPixel> hitTotal = new LinkedList<>();
-		for(Integer layer : hitLayers){
-			hitTotal.addAll(model.collision(pos, layer));
-		}
-		if(!hitTotal.isEmpty()) hit(model, hitTotal);
-	}
-
-	/**
-	 * 
-	 * @param hit called in order of collision layers, no specific ordering within each layer. Can be mutated (pop recommended).
-	 */
-	protected abstract void hit(Model model, LinkedList<PhysicsPixel> hit);
-}
-
-class StandardEvilProjectile extends Projectile {
-	protected float vX, vY;
-	StandardEvilProjectile(Coord pos, float vX, float vY, int life) {
-		super(pos, Color.ORANGE, 5, Model.LAYER_EVIL_PROJECTILE, life, new LinkedList<Integer>(){{ 
-			push(Model.LAYER_GOOD_PLAYER); 
-			push(Model.LAYER_GOOD_BULLET);
-		}});
-		this.vX = vX;
-		this.vY = vY;
-	}
-	@Override
-	protected void passThrough(Model model, Coord pos){
-		super.passThrough(model, pos);
-		model.queueAdd(new EvilTrail(pos, (int)(Math.random() * 20 + 20)));
-	}
-	@Override
-	protected void hit(Model model, LinkedList<PhysicsPixel> hit){
-		hit.pop().die(model);
-		this.die(model);
-	}
-	@Override
-	protected FloatCoord move() {
-		return new FloatCoord(truePos.x + vX, truePos.y + vY);
-	}
-}
-
-class EvilTrail extends TrailPixel {
-	EvilTrail(Coord pos, int life) {
-		super(pos, Color.BLACK, 2, Model.LAYER_EVIL_TRAIL, life);
-	}
+	protected abstract FloatCoord move();
 }

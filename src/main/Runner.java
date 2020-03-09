@@ -14,7 +14,7 @@ public class Runner implements Runnable {
 	private Model model;
 	private Controller controller;
 	private long tickTime = 1000000000 / 60; //in ns
-	private long ticksPerRender = 1;
+	private long ticksPerRender = 3;
 
 	public Runner() {
 		renderer = new Renderer("test", 256, 256, Color.WHITE);

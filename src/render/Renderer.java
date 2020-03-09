@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -109,20 +110,11 @@ public class Renderer extends JFrame implements IRenderer {
 		g.drawImage(i, 0, 0, canvas.getWidth(), canvas.getHeight(), null);
 		g.dispose();
 		b.show();
+		requestFocus();
 	}
 	
 	@Override
 	public void clear(){
 		pixelMap = new HashMap<>();
-	}
-
-	public static BufferedImage readFile(String name){
-		try {
-			return ImageIO.read(Renderer.class.getResourceAsStream(name));
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.out.println("Could not find texture by that name");
-		}
-		return null;
 	}
 }

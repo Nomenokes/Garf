@@ -54,32 +54,13 @@ public class Model {
 			this.pos = pos;
 		}
 	}
-	private static class Player {
-		static final float COS45 = 0.70710678118f;
-		float x, y, speed;
-		void move(IController controller){
-			float moveX = 0;
-			float moveY = 0;
-			if(controller.right() != controller.left()){
-				if(controller.up() != controller.down()) moveX = speed * COS45;
-				else moveX = speed;
-				if(controller.left()) moveX = -moveX;
-			}
-			if(controller.up() != controller.down()){
-				if(controller.left() != controller.right()) moveY = speed * COS45;
-				else moveY = speed;
-				if(controller.up()) moveY = -moveY;
-			}
-			x += moveX;
-			y += moveY;
-		}
-	}
 
 	private Map<Coord, Bucket> buckets;
 	private LinkedList<PhysicsPixel> addQueue;
 	private LinkedList<PhysicsPixel> removeQueue;
 	private LinkedList<PixelMove> moveQueue;
 	private final Player player;
+	private Phase phase;
 
 	public Model() {
 		buckets = new HashMap<>();
@@ -87,11 +68,12 @@ public class Model {
 		removeQueue = new LinkedList<>();
 		moveQueue = new LinkedList<>();
 		player = new Player(){{ speed = 1; }};
-		add(new StandardEvilProjectile(new Coord(-100, -100), 10, 10, 120));
+		phase = new FacePhase(this, 1, null, null, new FloatCoord(-100, -100), 0);
 	}
 
 	public void tick(IController controller) {
-		player.move(controller);
+		phase = phase.tick();
+		player.move(this, controller);
 		
 		buckets.forEach((coord, bucket) -> bucket.tick(this));
 
@@ -116,13 +98,13 @@ public class Model {
 		renderer.render();
 	}
 
-	private void add(PhysicsPixel p) {
+	void add(PhysicsPixel p) {
 		buckets.computeIfAbsent(p.pos, k -> new Bucket()).addPixel(p);
 	}
-	private void remove(PhysicsPixel p) {
+	void remove(PhysicsPixel p) {
 		buckets.get(p.pos).removePixel(p);
 	}
-	private void move(PhysicsPixel p, Coord pos) {
+	void move(PhysicsPixel p, Coord pos) {
 		remove(p);
 		p.pos = pos;
 		add(p);
@@ -144,10 +126,24 @@ public class Model {
 	}
 }
 
-class ToothAttack {
-	int count = 0;
-	void tick(Model model) {
-
+class Player {
+	private static final float COS45 = 0.70710678118f;
+	float x, y, speed;
+	void move(Model model, IController controller){
+		float moveX = 0;
+		float moveY = 0;
+		if(controller.right() != controller.left()){
+			if(controller.up() != controller.down()) moveX = speed * COS45;
+			else moveX = speed;
+			if(controller.left()) moveX = -moveX;
+		}
+		if(controller.up() != controller.down()){
+			if(controller.left() != controller.right()) moveY = speed * COS45;
+			else moveY = speed;
+			if(controller.up()) moveY = -moveY;
+		}
+		x += moveX;
+		y += moveY;
 	}
 }
 
