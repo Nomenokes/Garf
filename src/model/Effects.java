@@ -52,9 +52,13 @@ abstract class EvilProjectile extends Projectile{
 class StandardEvilProjectile extends EvilProjectile {
 	protected float vX, vY;
 	StandardEvilProjectile(Coord pos, int life, float vX, float vY) {
-		super(pos, Color.ORANGE, 5, life);
+		super(pos, Model.PRIORITY_ORANGE_EVIL_PROJECTILE.color, Model.PRIORITY_ORANGE_EVIL_PROJECTILE.priority, life);
 		this.vX = vX;
 		this.vY = vY;
+	}
+	@Override
+	void tick(Model model){
+		super.tick(model);
 	}
 	@Override
 	protected void passThrough(Model model, Coord pos){
@@ -69,13 +73,13 @@ class StandardEvilProjectile extends EvilProjectile {
 
 class EvilTrail extends TrailPixel {
 	EvilTrail(Coord pos, int life) {
-		super(pos, Color.BLACK, 2, Model.LAYER_EVIL_TRAIL, life);
+		super(pos, Model.PRIORITY_BLACK_TRAIL.color, Model.PRIORITY_BLACK_TRAIL.priority, Model.LAYER_EVIL_TRAIL, life);
 	}
 }
 
 class DeadlyTrail extends EvilProjectile {
-	DeadlyTrail(Coord pos, Color color, int life) {
-		super(pos, color, 4, life);
+	DeadlyTrail(Coord pos, int life) {
+		super(pos, Model.PRIORITY_BLACK_PROJECTILE.color, Model.PRIORITY_BLACK_PROJECTILE.priority, life);
 	}
 	@Override
 	protected FloatCoord move() {
@@ -127,12 +131,12 @@ class PixelRotator {
 
 class FacePixel extends EvilProjectile {
 	private PixelRotator rotator;
-	private FacePixel(Color color, int life, PixelRotator rotator){
-		super(new Coord(rotator.move()), color, 3, life);
+	private FacePixel(int life, PixelRotator rotator){
+		super(new Coord(rotator.move()), Model.PRIORITY_BLACK_PROJECTILE.color, Model.PRIORITY_BLACK_PROJECTILE.priority, life);
 		this.rotator = rotator;
 	}
-	FacePixel(Coord relative, Color color, int life, PixelRotator.RotationalSuperPosition rotationalGetter) {
-		this(color, life, new PixelRotator(true, relative, rotationalGetter));
+	FacePixel(Coord relative, int life, PixelRotator.RotationalSuperPosition rotationalGetter) {
+		this(life, new PixelRotator(true, relative, rotationalGetter));
 	}
 	@Override
 	protected FloatCoord move() {
@@ -141,14 +145,15 @@ class FacePixel extends EvilProjectile {
 }
 class TrailingFacePixel extends FacePixel {
 	private final float threshold;
-	private final int period, trail;
+	private final int period, trail, rand;
 	private int passed;
-	TrailingFacePixel(Coord pos, Color color, int life, PixelRotator.RotationalSuperPosition rotationalGetter, int period, float distance, int trail) {
-		super(pos, color, life, rotationalGetter);
+	TrailingFacePixel(Coord pos, int life, PixelRotator.RotationalSuperPosition rotationalGetter, int period, float distance, int trail, int rand) {
+		super(pos, life, rotationalGetter);
 		this.threshold = distance / 2 + 0.5f;
 		this.period = period;
 		this.trail = (int)(trail * (1 - threshold));
 		this.passed = 0;
+		this.rand = rand;
 	}
 
 	@Override
@@ -156,7 +161,7 @@ class TrailingFacePixel extends FacePixel {
 		super.passThrough(model, pos);
 		passed++;
 		//if(Math.cos((float)passed / period) > threshold){
-			model.queueAdd(new DeadlyTrail(pos, color, trail));
+			model.queueAdd(new DeadlyTrail(pos, (int)(trail + rand * Math.random())));
 		//}
 	}
 }

@@ -55,9 +55,9 @@ public class Renderer extends JFrame implements IRenderer {
 	}
 
 	@Override
-	public void setCenter(int x, int y) {
-		this.centerX = x;
-		this.centerY = y;
+	public void setCenter(Coord center) {
+		this.centerX = center.x;
+		this.centerY = center.y;
 	}
 
 	@Override

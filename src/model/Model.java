@@ -3,8 +3,15 @@ package model;
 import control.IController;
 import render.IRenderer;
 
-import java.awt.*;
-import java.util.*;
+import java.awt.Color;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class Model {
 	static final int LAYER_EVIL_PROJECTILE = 1, 
@@ -13,24 +20,43 @@ public class Model {
 			LAYER_EVIL_TEMP_EYE = 4,
 			LAYER_GOOD_BULLET = 5,
 			LAYER_GOOD_PLAYER = 6;
+	static class ColorPriority {
+		final int priority;
+		final Color color;
+		ColorPriority(int priority, Color color) {
+			this.priority = priority;
+			this.color = color;
+		}
+	}
+	static final ColorPriority PRIORITY_ORANGE_EVIL_PROJECTILE = new ColorPriority(5, Color.ORANGE),
+			PRIORITY_BLACK_TRAIL = new ColorPriority(2, Color.BLACK),
+			PRIORITY_BLACK_PROJECTILE = new ColorPriority(4, Color.BLACK);
 	
 	private static class Bucket {
 		// organized by collision layer
 		private Map<Integer, Set<PhysicsPixel>> collisionPixels;
 		// sorted by render priority
 		private SortedSet<PhysicsPixel> renderPixels;
-		Bucket() {
+		private Coord coord;
+		Bucket(Coord coord) {
+			this.coord = coord;
 			collisionPixels = new HashMap<>();
-			renderPixels = new TreeSet<>(Comparator.comparingInt(p -> -p.priority));
+			renderPixels = new TreeSet<>((p1, p2) -> p1.priority == p2.priority ? p2.hashCode() - p1.hashCode() : p2.priority - p1.priority);
 		}
 
 		Color render() {
-			if (renderPixels.isEmpty()) return null;
-			PhysicsPixel first = renderPixels.first();
-			return first.color;
+			Color ret;
+			if (renderPixels.isEmpty()) ret = null;
+			else {
+				PhysicsPixel first = renderPixels.first();
+				ret = first.color;
+			}
+			return ret;
 		}
 		void tick(Model model) {
+			int size = renderPixels.size();
 			renderPixels.forEach(physicsPixel -> physicsPixel.tick(model));
+			assert size == renderPixels.size();
 		}
 
 		void addPixel(PhysicsPixel p) {
@@ -39,7 +65,7 @@ public class Model {
 		}
 		void removePixel(PhysicsPixel p) {
 			collisionPixels.get(p.collisionLayer).remove(p);
-			renderPixels.remove(p);//TODO remove bucket
+			renderPixels.remove(p);
 		}
 		Set<PhysicsPixel> collision(int collisionLayer) {
 			Set<PhysicsPixel> ret = collisionPixels.get(collisionLayer);
@@ -47,8 +73,8 @@ public class Model {
 		}
 	}
 	private static class PixelMove {
-		PhysicsPixel pixel;
-		Coord pos;
+		final PhysicsPixel pixel;
+		final Coord pos;
 		PixelMove(PhysicsPixel pixel, Coord pos) {
 			this.pixel = pixel;
 			this.pos = pos;
@@ -67,7 +93,7 @@ public class Model {
 		addQueue = new LinkedList<>();
 		removeQueue = new LinkedList<>();
 		moveQueue = new LinkedList<>();
-		player = new Player(){{ speed = 1; }};
+		player = new Player(0, 0, 1);
 		phase = new FacePhase(this, 1, null, null, new FloatCoord(-100, -100), 0);
 	}
 
@@ -75,8 +101,10 @@ public class Model {
 		phase = phase.tick();
 		player.move(this, controller);
 		
+		int size = buckets.size();
 		buckets.forEach((coord, bucket) -> bucket.tick(this));
-
+		assert size == buckets.size();
+		
 		int length = addQueue.size();
 		for (int i = 0; i < length; i++) {
 			add(addQueue.pop());
@@ -93,16 +121,16 @@ public class Model {
 	}
 	public void render(IRenderer renderer) {
 		renderer.clear();
-		renderer.setCenter((int)player.x, (int)player.y);
+		renderer.setCenter(new Coord(player.getCameraPos()));
 		buckets.forEach((coord, bucket) -> renderer.draw(coord, bucket.render(), 1));
 		renderer.render();
 	}
 
 	void add(PhysicsPixel p) {
-		buckets.computeIfAbsent(p.pos, k -> new Bucket()).addPixel(p);
+		buckets.computeIfAbsent(p.pos, k -> new Bucket(p.pos)).addPixel(p);
 	}
 	void remove(PhysicsPixel p) {
-		buckets.get(p.pos).removePixel(p);
+		buckets.get(p.pos).removePixel(p);//TODO remove bucket
 	}
 	void move(PhysicsPixel p, Coord pos) {
 		remove(p);
@@ -128,7 +156,12 @@ public class Model {
 
 class Player {
 	private static final float COS45 = 0.70710678118f;
-	float x, y, speed;
+	private float x, y, speed;
+	Player(float x, float y, float speed){
+		this.x = x;
+		this.y = y;
+		this.speed = speed;
+	}
 	void move(Model model, IController controller){
 		float moveX = 0;
 		float moveY = 0;
@@ -144,6 +177,12 @@ class Player {
 		}
 		x += moveX;
 		y += moveY;
+	}
+	FloatCoord getCameraPos(){
+		return new FloatCoord(x, y);
+	}
+	FloatCoord getTargetPos(){
+		return new FloatCoord(x, y);
 	}
 }
 

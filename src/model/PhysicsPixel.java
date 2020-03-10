@@ -31,7 +31,6 @@ class PhysicsPixel {
 	void die(Model model) {
 		if (!dead) model.queueRemove(this);
 		dead = true;
-		System.out.println("ded");
 	}
 	
 //	@Override
@@ -85,10 +84,10 @@ abstract class TrailingPixel extends TrailPixel {
 				}
 
 				if (!dead) {
-					truePos = newPos;
 					model.queueMove(this, newIntPos);
 				}
 			}
+			truePos = newPos;
 		}
 	}
 	
