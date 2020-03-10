@@ -62,10 +62,10 @@ class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPositi
 	static class FaceReader implements Utility.PixelReader {
 		private LinkedList<Function<PixelRotator.RotationalSuperPosition, PhysicsPixel>> pixels = new LinkedList<>();
 		private Set<Integer> trailing = new HashSet<>();
-		private int width;
+		private int height;
 		@Override
 		public void init(int width, int height) {
-			this.width = width;
+			this.height = height;
 		}
 		@Override
 		public void add(int x, int y, Color color) {
@@ -73,18 +73,18 @@ class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPositi
 				trailing.add(y);
 				pixels.push(rot -> new TrailingFacePixel(
 						new Coord(x, y),
-						//color,
+						color,
 						FACE_LIFE,
 						rot,
 						SPIKE_PERIOD,
-						Math.abs((float)x / width),
+						Math.abs((float)y / height),
 						TRAIL_LENGTH,
 						TRAIL_ADD
 				));
 			} else {
 				pixels.push(rot -> new FacePixel(
 						new Coord(x, y),
-						//color,
+						color,
 						FACE_LIFE,
 						rot
 				));
@@ -98,7 +98,7 @@ class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPositi
 	}
 	private static FaceReader FACE_CREATOR = new FaceReader();
 	static { Utility.initializeTexture("/phases/face.png", FACE_CREATOR); }
-	private static final int TRAIL_LENGTH = 60 * 0, TRAIL_ADD = 10, SPIKE_PERIOD = 5, FACE_LIFE = 12000;
+	private static final int TRAIL_LENGTH = 60 * 8, TRAIL_ADD = 60 * 2, SPIKE_PERIOD = 5, FACE_LIFE = 12000;
 	
 	protected Eye left, right;
 	protected FloatCoord center;

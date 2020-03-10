@@ -30,7 +30,7 @@ public class Model {
 	}
 	static final ColorPriority PRIORITY_ORANGE_EVIL_PROJECTILE = new ColorPriority(5, Color.ORANGE),
 			PRIORITY_BLACK_TRAIL = new ColorPriority(2, Color.BLACK),
-			PRIORITY_BLACK_PROJECTILE = new ColorPriority(4, Color.BLACK);
+			PRIORITY_TEXTURE_PROJECTILE = new ColorPriority(4, null);
 	
 	private static class Bucket {
 		// organized by collision layer
@@ -94,7 +94,7 @@ public class Model {
 		removeQueue = new LinkedList<>();
 		moveQueue = new LinkedList<>();
 		player = new Player(0, 0, 1);
-		phase = new FacePhase(this, 1, null, null, new FloatCoord(-100, -100), 0);
+		phase = new FacePhase(this, 1, null, null, new FloatCoord(0, 0), 0);
 	}
 
 	public void tick(IController controller) {

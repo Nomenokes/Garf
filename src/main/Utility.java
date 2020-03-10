@@ -35,6 +35,7 @@ public class Utility {
 		int white = Color.WHITE.getRGB();
 		System.out.println("Successfully loaded image: " + name);
 		
+		creator.init(width, height);
 		for(int y = startY; y < endY; y++){
 			for(int x = startX; x < endX; x++){
 				if(pixels[pixelsIndex] != white) {

@@ -78,8 +78,8 @@ class EvilTrail extends TrailPixel {
 }
 
 class DeadlyTrail extends EvilProjectile {
-	DeadlyTrail(Coord pos, int life) {
-		super(pos, Model.PRIORITY_BLACK_PROJECTILE.color, Model.PRIORITY_BLACK_PROJECTILE.priority, life);
+	DeadlyTrail(Coord pos, Color color, int life) {
+		super(pos, color, Model.PRIORITY_TEXTURE_PROJECTILE.priority, life);
 	}
 	@Override
 	protected FloatCoord move() {
@@ -131,12 +131,12 @@ class PixelRotator {
 
 class FacePixel extends EvilProjectile {
 	private PixelRotator rotator;
-	private FacePixel(int life, PixelRotator rotator){
-		super(new Coord(rotator.move()), Model.PRIORITY_BLACK_PROJECTILE.color, Model.PRIORITY_BLACK_PROJECTILE.priority, life);
+	private FacePixel(Color color, int life, PixelRotator rotator){
+		super(new Coord(rotator.move()), color, Model.PRIORITY_TEXTURE_PROJECTILE.priority, life);
 		this.rotator = rotator;
 	}
-	FacePixel(Coord relative, int life, PixelRotator.RotationalSuperPosition rotationalGetter) {
-		this(life, new PixelRotator(true, relative, rotationalGetter));
+	FacePixel(Coord relative, Color color, int life, PixelRotator.RotationalSuperPosition rotationalGetter) {
+		this(color, life, new PixelRotator(true, relative, rotationalGetter));
 	}
 	@Override
 	protected FloatCoord move() {
@@ -144,24 +144,24 @@ class FacePixel extends EvilProjectile {
 	}
 }
 class TrailingFacePixel extends FacePixel {
-	private final float threshold;
-	private final int period, trail, rand;
+	private final float threshold, period;
+	private final int trail, rand;
 	private int passed;
-	TrailingFacePixel(Coord pos, int life, PixelRotator.RotationalSuperPosition rotationalGetter, int period, float distance, int trail, int rand) {
-		super(pos, life, rotationalGetter);
-		this.threshold = distance / 2 + 0.5f;
-		this.period = period;
-		this.trail = (int)(trail * (1 - threshold));
+	TrailingFacePixel(Coord pos, Color color, int life, PixelRotator.RotationalSuperPosition rotationalGetter, float period, float distance, int trail, int rand) {
+		super(pos, color, life, rotationalGetter);
+		this.threshold = distance * 2 - 1.5f;
+		this.period = (float)(period / Math.PI);
+		this.trail = (int)(trail * (1 - threshold + 0.1));
 		this.passed = 0;
-		this.rand = rand;
+		this.rand = rand;//(int)(rand * (1 - threshold));
 	}
 
 	@Override
 	protected void passThrough(Model model, Coord pos) {
 		super.passThrough(model, pos);
 		passed++;
-		//if(Math.cos((float)passed / period) > threshold){
-			model.queueAdd(new DeadlyTrail(pos, (int)(trail + rand * Math.random())));
-		//}
+		if(Math.cos(passed / period) > threshold){
+			model.queueAdd(new DeadlyTrail(pos, color, (int)(trail + rand * Math.random())));
+		}
 	}
 }
