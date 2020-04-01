@@ -4,7 +4,6 @@ import java.awt.Color;
 
 class PhysicsPixel {
 	//package-private variables should be open to access by other classes
-	Coord pos;
 	Color color;
 	int priority;
 	int collisionLayer;
@@ -29,11 +28,8 @@ class PhysicsPixel {
 		if(dead) throw new IllegalStateException("A pixel has been ticked after dying");
 	}
 	void die() {
-		if (!dead) model.queueRemove(this, pos);
+		if (!dead) model.queueRemove(this);
 		dead = true;
-	}
-	void moveTo(Coord pos){
-		this.pos = pos;
 	}
 	
 //	@Override
@@ -59,8 +55,11 @@ class TrailPixel extends PhysicsPixel {
 
 abstract class TrailingPixel extends TrailPixel {
 	protected FloatCoord truePos;
-	TrailingPixel(Model model, Color color, int priority, int collisionLayer, int life){
+	protected Coord roundedPos;
+	TrailingPixel(Model model, FloatCoord pos, Color color, int priority, int collisionLayer, int life){
 		super(model, color, priority, collisionLayer, life);
+		this.truePos = pos;
+		this.roundedPos = new Coord(pos);
 	}
 	@Override
 	void tick(){
@@ -69,7 +68,7 @@ abstract class TrailingPixel extends TrailPixel {
 			FloatCoord oldPos = truePos;
 			FloatCoord newPos = move();
 			Coord newIntPos = new Coord(newPos);
-			if (!pos.equals(newIntPos)) {
+			if (!roundedPos.equals(newIntPos)) {
 				float distX = (newPos.x - oldPos.x);
 				float distY = (newPos.y - oldPos.y);
 				float distance = (float)Math.sqrt(distX * distX + distY * distY);
@@ -86,16 +85,11 @@ abstract class TrailingPixel extends TrailPixel {
 				}
 
 				if (!dead) {
-					model.queueMove(this, pos, newIntPos);
+					model.queueMove(this, newIntPos);
 				}
 			}
 			truePos = newPos;
 		}
-	}
-	@Override
-	void moveTo(Coord pos){
-		super.moveTo(pos);
-		this.truePos = new FloatCoord(pos);
 	}
 	
 	protected abstract void passThrough(Coord pos);

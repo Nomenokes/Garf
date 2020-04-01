@@ -8,7 +8,6 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 
 public class Utility {
-	public static final boolean ASSERTIONS = false;//TODO figure out a better way to toggle expensive assert logic
 	private Utility(){}
 
 	public static BufferedImage readFile(String name){

@@ -10,15 +10,14 @@ abstract class Projectile extends TrailingPixel {
 	protected List<Integer> hitLayers;
 	private LinkedList<PhysicsPixel> hitTotal;
 
-	Projectile(Model model, Color color, int priority, int collisionLayer, int life, List<Integer> hitLayers) {
-		super(model, color, priority, collisionLayer, life);
+	Projectile(Model model, FloatCoord pos, Color color, int priority, int collisionLayer, int life, List<Integer> hitLayers) {
+		super(model, pos, color, priority, collisionLayer, life);
 		this.hitLayers = hitLayers;
 	}
 
 	@Override
 	void tick(){
 		hitTotal = new LinkedList<>();
-		checkHit(pos);
 		super.tick();
 		if(!hitTotal.isEmpty()) hit(hitTotal);
 	}
@@ -40,8 +39,8 @@ abstract class Projectile extends TrailingPixel {
 }
 
 abstract class GoodProjectile extends Projectile {
-	GoodProjectile(Model model, Color color, int priority, int life) {
-		super(model, color, priority, Model.LAYER_GOOD_BULLET, life, new LinkedList<Integer>(){{
+	GoodProjectile(Model model, FloatCoord pos, Color color, int priority, int life) {
+		super(model, pos, color, priority, Model.LAYER_GOOD_BULLET, life, new LinkedList<Integer>(){{
 			push(Model.LAYER_EVIL_PROJECTILE);
 			push(Model.LAYER_EVIL_TRAIL);
 		}});
@@ -68,8 +67,8 @@ abstract class GoodProjectile extends Projectile {
 }
 class StandardGoodProjectile extends GoodProjectile{
 	protected float vX, vY;
-	StandardGoodProjectile(Model model, int life, float vX, float vY) {
-		super(model, Model.PRIORITY_GOOD_BLUE_PROJECTILE.color, Model.PRIORITY_GOOD_BLUE_PROJECTILE.priority, life);
+	StandardGoodProjectile(Model model, FloatCoord pos, int life, float vX, float vY) {
+		super(model, pos, Model.PRIORITY_GOOD_BLUE_PROJECTILE.color, Model.PRIORITY_GOOD_BLUE_PROJECTILE.priority, life);
 		this.vX = vX;
 		this.vY = vY;
 	}
@@ -84,8 +83,8 @@ class StandardGoodProjectile extends GoodProjectile{
 }
 
 abstract class EvilProjectile extends Projectile{
-	EvilProjectile(Model model, Color color, int priority, int life) {
-		super(model, color, priority, Model.LAYER_EVIL_PROJECTILE, life, new LinkedList<Integer>(){{
+	EvilProjectile(Model model, FloatCoord pos, Color color, int priority, int life) {
+		super(model, pos, color, priority, Model.LAYER_EVIL_PROJECTILE, life, new LinkedList<Integer>(){{
 			push(Model.LAYER_GOOD_PLAYER);
 		}});
 	}
@@ -97,8 +96,8 @@ abstract class EvilProjectile extends Projectile{
 }
 class StandardEvilProjectile extends EvilProjectile {
 	protected float vX, vY;
-	StandardEvilProjectile(Model model, Coord pos, int life, float vX, float vY) {
-		super(model, Model.PRIORITY_ORANGE_EVIL_PROJECTILE.color, Model.PRIORITY_ORANGE_EVIL_PROJECTILE.priority, life);
+	StandardEvilProjectile(Model model, FloatCoord pos, int life, float vX, float vY) {
+		super(model, pos, Model.PRIORITY_ORANGE_EVIL_PROJECTILE.color, Model.PRIORITY_ORANGE_EVIL_PROJECTILE.priority, life);
 		this.vX = vX;
 		this.vY = vY;
 	}
@@ -124,8 +123,8 @@ class EvilTrail extends TrailPixel {
 }
 
 class DeadlyTrail extends EvilProjectile {
-	DeadlyTrail(Model model, Color color, int life) {
-		super(model, color, Model.PRIORITY_TEXTURE_PROJECTILE.priority, life);
+	DeadlyTrail(Model model, Coord pos, Color color, int life) {
+		super(model, new FloatCoord(pos), color, Model.PRIORITY_TEXTURE_PROJECTILE.priority, life);
 	}
 	@Override
 	protected FloatCoord move() {
@@ -148,13 +147,13 @@ class PixelRotator {
 	private final float radius;
 	private RotationalSuperPosition rotationalGetter;
 
-	PixelRotator(Coord pos, RotationalSuperPosition rotationalGetter) {
+	PixelRotator(FloatCoord pos, RotationalSuperPosition rotationalGetter) {
 		this.rotationalGetter = rotationalGetter;
 		FloatCoord relative = new FloatCoord(pos.x - rotationalGetter.center().x, pos.y - rotationalGetter.center().y);
 		this.rotation = Math.atan2(relative.y, relative.x) - rotationalGetter.rotation();
 		this.radius = Utility.magnitude(relative);
 	}
-	PixelRotator(boolean relative, Coord pos, RotationalSuperPosition rotationalGetter){
+	PixelRotator(boolean relative, FloatCoord pos, RotationalSuperPosition rotationalGetter){
 		this(pos, new RotationalSuperPosition(){
 			@Override
 			public double rotation() {
@@ -177,12 +176,12 @@ class PixelRotator {
 
 class FacePixel extends EvilProjectile {
 	private PixelRotator rotator;
-	private FacePixel(Model model, Color color, int life, PixelRotator rotator){
-		super(model, color, Model.PRIORITY_TEXTURE_PROJECTILE.priority, life);
+	private FacePixel(Model model, FloatCoord pos, Color color, int life, PixelRotator rotator){
+		super(model, pos, color, Model.PRIORITY_TEXTURE_PROJECTILE.priority, life);
 		this.rotator = rotator;
 	}
-	FacePixel(Model model, Coord relative, Color color, int life, PixelRotator.RotationalSuperPosition rotationalGetter) {
-		this(model, color, life, new PixelRotator(true, relative, rotationalGetter));
+	FacePixel(Model model, FloatCoord relative, Color color, int life, PixelRotator.RotationalSuperPosition rotationalGetter) {
+		this(model, relative, color, life, new PixelRotator(true, relative, rotationalGetter));
 	}
 	@Override
 	protected FloatCoord move() {
@@ -193,7 +192,7 @@ class TrailingFacePixel extends FacePixel {
 	private final float threshold, period;
 	private final int trail, rand;
 	private int passed;
-	TrailingFacePixel(Model model, Coord pos, Color color, int life, PixelRotator.RotationalSuperPosition rotationalGetter, float period, float distance, int trail, int rand) {
+	TrailingFacePixel(Model model, FloatCoord pos, Color color, int life, PixelRotator.RotationalSuperPosition rotationalGetter, float period, float distance, int trail, int rand) {
 		super(model, pos, color, life, rotationalGetter);
 		this.threshold = distance * 2 - 1.5f;
 		this.period = (float)(period / Math.PI);
@@ -207,7 +206,7 @@ class TrailingFacePixel extends FacePixel {
 		super.passThrough(pos);
 		passed++;
 		if(Math.cos(passed / period) > threshold){
-			model.queueAdd(new DeadlyTrail(model, color, (int)(trail + rand * Math.random())), pos);
+			model.queueAdd(new DeadlyTrail(model, pos, color, (int)(trail + rand * Math.random())), pos);
 		}
 	}
 }

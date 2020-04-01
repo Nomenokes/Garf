@@ -73,7 +73,7 @@ class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPositi
 				trailing.add(y);
 				pixels.push((model, rot) -> model.add(new TrailingFacePixel(
 						model,
-						new Coord(x, y),
+						new FloatCoord(x, y),
 						color,
 						FACE_LIFE,
 						rot,
@@ -85,7 +85,7 @@ class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPositi
 			} else {
 				pixels.push((model, rot) -> model.add(new FacePixel(
 						model,
-						new Coord(x, y),
+						new FloatCoord(x, y),
 						color,
 						FACE_LIFE,
 						rot
