@@ -1,6 +1,5 @@
 package model;
 
-import com.sun.org.apache.xpath.internal.operations.Mod;
 import main.Utility;
 
 import java.awt.Color;
@@ -11,8 +10,8 @@ abstract class Projectile extends TrailingPixel {
 	protected List<Integer> hitLayers;
 	private LinkedList<PhysicsPixel> hitTotal;
 
-	Projectile(Model model, Coord pos, Color color, int priority, int collisionLayer, int life, List<Integer> hitLayers) {
-		super(model, pos, color, priority, collisionLayer, life);
+	Projectile(Model model, Color color, int priority, int collisionLayer, int life, List<Integer> hitLayers) {
+		super(model, color, priority, collisionLayer, life);
 		this.hitLayers = hitLayers;
 	}
 
@@ -41,8 +40,8 @@ abstract class Projectile extends TrailingPixel {
 }
 
 abstract class GoodProjectile extends Projectile {
-	GoodProjectile(Model model, Coord pos, Color color, int priority, int life) {
-		super(model, pos, color, priority, Model.LAYER_GOOD_BULLET, life, new LinkedList<Integer>(){{
+	GoodProjectile(Model model, Color color, int priority, int life) {
+		super(model, color, priority, Model.LAYER_GOOD_BULLET, life, new LinkedList<Integer>(){{
 			push(Model.LAYER_EVIL_PROJECTILE);
 			push(Model.LAYER_EVIL_TRAIL);
 		}});
@@ -69,8 +68,8 @@ abstract class GoodProjectile extends Projectile {
 }
 class StandardGoodProjectile extends GoodProjectile{
 	protected float vX, vY;
-	StandardGoodProjectile(Model model, Coord pos, int life, float vX, float vY) {
-		super(model, pos, Model.PRIORITY_GOOD_BLUE_PROJECTILE.color, Model.PRIORITY_GOOD_BLUE_PROJECTILE.priority, life);
+	StandardGoodProjectile(Model model, int life, float vX, float vY) {
+		super(model, Model.PRIORITY_GOOD_BLUE_PROJECTILE.color, Model.PRIORITY_GOOD_BLUE_PROJECTILE.priority, life);
 		this.vX = vX;
 		this.vY = vY;
 	}
@@ -85,8 +84,8 @@ class StandardGoodProjectile extends GoodProjectile{
 }
 
 abstract class EvilProjectile extends Projectile{
-	EvilProjectile(Model model, Coord pos, Color color, int priority, int life) {
-		super(model, pos, color, priority, Model.LAYER_EVIL_PROJECTILE, life, new LinkedList<Integer>(){{
+	EvilProjectile(Model model, Color color, int priority, int life) {
+		super(model, color, priority, Model.LAYER_EVIL_PROJECTILE, life, new LinkedList<Integer>(){{
 			push(Model.LAYER_GOOD_PLAYER);
 		}});
 	}
@@ -99,7 +98,7 @@ abstract class EvilProjectile extends Projectile{
 class StandardEvilProjectile extends EvilProjectile {
 	protected float vX, vY;
 	StandardEvilProjectile(Model model, Coord pos, int life, float vX, float vY) {
-		super(model, pos, Model.PRIORITY_ORANGE_EVIL_PROJECTILE.color, Model.PRIORITY_ORANGE_EVIL_PROJECTILE.priority, life);
+		super(model, Model.PRIORITY_ORANGE_EVIL_PROJECTILE.color, Model.PRIORITY_ORANGE_EVIL_PROJECTILE.priority, life);
 		this.vX = vX;
 		this.vY = vY;
 	}
@@ -110,7 +109,7 @@ class StandardEvilProjectile extends EvilProjectile {
 	@Override
 	protected void passThrough(Coord pos){
 		super.passThrough(pos);
-		model.queueAdd(new EvilTrail(model, pos, (int)(Math.random() * 20 + 20)));
+		model.queueAdd(new EvilTrail(model, (int)(Math.random() * 20 + 20)), pos);
 	}
 	@Override
 	protected FloatCoord move() {
@@ -119,14 +118,14 @@ class StandardEvilProjectile extends EvilProjectile {
 }
 
 class EvilTrail extends TrailPixel {
-	EvilTrail(Model model, Coord pos, int life) {
-		super(model, pos, Model.PRIORITY_BLACK_TRAIL.color, Model.PRIORITY_BLACK_TRAIL.priority, Model.LAYER_EVIL_TRAIL, life);
+	EvilTrail(Model model, int life) {
+		super(model, Model.PRIORITY_BLACK_TRAIL.color, Model.PRIORITY_BLACK_TRAIL.priority, Model.LAYER_EVIL_TRAIL, life);
 	}
 }
 
 class DeadlyTrail extends EvilProjectile {
-	DeadlyTrail(Model model, Coord pos, Color color, int life) {
-		super(model, pos, color, Model.PRIORITY_TEXTURE_PROJECTILE.priority, life);
+	DeadlyTrail(Model model, Color color, int life) {
+		super(model, color, Model.PRIORITY_TEXTURE_PROJECTILE.priority, life);
 	}
 	@Override
 	protected FloatCoord move() {
@@ -179,7 +178,7 @@ class PixelRotator {
 class FacePixel extends EvilProjectile {
 	private PixelRotator rotator;
 	private FacePixel(Model model, Color color, int life, PixelRotator rotator){
-		super(model, new Coord(rotator.move()), color, Model.PRIORITY_TEXTURE_PROJECTILE.priority, life);
+		super(model, color, Model.PRIORITY_TEXTURE_PROJECTILE.priority, life);
 		this.rotator = rotator;
 	}
 	FacePixel(Model model, Coord relative, Color color, int life, PixelRotator.RotationalSuperPosition rotationalGetter) {
@@ -208,7 +207,7 @@ class TrailingFacePixel extends FacePixel {
 		super.passThrough(pos);
 		passed++;
 		if(Math.cos(passed / period) > threshold){
-			model.queueAdd(new DeadlyTrail(model, pos, color, (int)(trail + rand * Math.random())));
+			model.queueAdd(new DeadlyTrail(model, color, (int)(trail + rand * Math.random())), pos);
 		}
 	}
 }

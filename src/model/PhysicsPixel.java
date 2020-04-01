@@ -1,16 +1,10 @@
 package model;
 
 import java.awt.Color;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
 
 class PhysicsPixel {
 	//package-private variables should be open to access by other classes
 	Coord pos;
-	//pos should only be changed by the model, not by a pixel itself
 	Color color;
 	int priority;
 	int collisionLayer;
@@ -19,20 +13,27 @@ class PhysicsPixel {
 	protected boolean dead;
 	protected final Model model;
 	
-	PhysicsPixel(Model model, Coord pos, Color color, int priority, int collisionLayer) {
-		if (pos == null) throw new IllegalArgumentException("pos is null");
+	boolean removed;
+	
+	PhysicsPixel(Model model, Color color, int priority, int collisionLayer) {
 		this.model = model;
-		this.pos = pos;
 		this.color = color;
 		this.priority = priority;
 		this.collisionLayer = collisionLayer;
 		this.dead = false;
+		removed = false;
 	}
 	
-	void tick() {}
+	void tick() {
+		if(removed) System.out.println("t");
+		if(dead) throw new IllegalStateException("A pixel has been ticked after dying");
+	}
 	void die() {
-		if (!dead) model.queueRemove(this);
+		if (!dead) model.queueRemove(this, pos);
 		dead = true;
+	}
+	void moveTo(Coord pos){
+		this.pos = pos;
 	}
 	
 //	@Override
@@ -43,8 +44,8 @@ class PhysicsPixel {
 
 class TrailPixel extends PhysicsPixel {
 	protected int life;
-	TrailPixel(Model model, Coord pos, Color color, int priority, int collisionLayer, int life) {
-		super(model, pos, color, priority, collisionLayer);
+	TrailPixel(Model model, Color color, int priority, int collisionLayer, int life) {
+		super(model, color, priority, collisionLayer);
 		this.life = life;
 	}
 
@@ -58,9 +59,8 @@ class TrailPixel extends PhysicsPixel {
 
 abstract class TrailingPixel extends TrailPixel {
 	protected FloatCoord truePos;
-	TrailingPixel(Model model, Coord pos, Color color, int priority, int collisionLayer, int life){
-		super(model, pos, color, priority, collisionLayer, life);
-		this.truePos = new FloatCoord(pos);
+	TrailingPixel(Model model, Color color, int priority, int collisionLayer, int life){
+		super(model, color, priority, collisionLayer, life);
 	}
 	@Override
 	void tick(){
@@ -86,11 +86,16 @@ abstract class TrailingPixel extends TrailPixel {
 				}
 
 				if (!dead) {
-					model.queueMove(this, newIntPos);
+					model.queueMove(this, pos, newIntPos);
 				}
 			}
 			truePos = newPos;
 		}
+	}
+	@Override
+	void moveTo(Coord pos){
+		super.moveTo(pos);
+		this.truePos = new FloatCoord(pos);
 	}
 	
 	protected abstract void passThrough(Coord pos);

@@ -59,7 +59,7 @@ public class Model {
 			}
 			return ret;
 		}
-		void tick(Model model) {
+		void tick() {
 			int size;
 			if(Utility.ASSERTIONS) size = renderPixels.size();
 			renderPixels.forEach(PhysicsPixel::tick);
@@ -98,19 +98,28 @@ public class Model {
 		}
 	}
 	//a stored call to move
-	private static class PixelMove {
+	private static class QueueMove {
+		final PhysicsPixel pixel;
+		final Coord from, to;
+		QueueMove(PhysicsPixel pixel, Coord from, Coord to) {
+			this.pixel = pixel;
+			this.from = from;
+			this.to = to;
+		}
+	}
+	private static class QueueAdd {
 		final PhysicsPixel pixel;
 		final Coord pos;
-		PixelMove(PhysicsPixel pixel, Coord pos) {
+		private QueueAdd(PhysicsPixel pixel, Coord pos) {
 			this.pixel = pixel;
 			this.pos = pos;
 		}
 	}
 
 	private Map<Coord, Bucket> buckets;
-	private LinkedList<PhysicsPixel> addQueue;
-	private LinkedList<PhysicsPixel> removeQueue;
-	private LinkedList<PixelMove> moveQueue;
+	private LinkedList<QueueAdd> addQueue;
+	private LinkedList<QueueAdd> removeQueue;
+	private LinkedList<QueueMove> moveQueue;
 	private final Player player;
 	private Phase phase;
 
@@ -129,21 +138,23 @@ public class Model {
 
 		int size;
 		if(Utility.ASSERTIONS) size = buckets.size();
-		buckets.forEach((coord, bucket) -> bucket.tick(this));
+		buckets.forEach((coord, bucket) -> bucket.tick());
 		if(Utility.ASSERTIONS) assert size == buckets.size();
 
 		int length = addQueue.size();
 		for (int i = 0; i < length; i++) {
-			add(addQueue.pop());
+			QueueAdd pop = addQueue.pop();
+			add(pop.pixel, pop.pos);
 		}
 		length = removeQueue.size();
 		for (int i = 0; i < length; i++) {
-			remove(removeQueue.pop());
+			QueueAdd pop = removeQueue.pop();
+			remove(pop.pixel, pop.pos);
 		}
 		length = moveQueue.size();
 		for (int i = 0; i < length; i++) {
-			PixelMove pop = moveQueue.pop();
-			move(pop.pixel, pop.pos);
+			QueueMove pop = moveQueue.pop();
+			move(pop.pixel, pop.from, pop.to);
 		}
 	}
 	public void render(IRenderer renderer) {
@@ -153,25 +164,28 @@ public class Model {
 		renderer.render();
 	}
 
-	void add(PhysicsPixel p) {
-		buckets.computeIfAbsent(p.pos, k -> new Bucket(p.pos)).addPixel(p);
+	void add(PhysicsPixel p, Coord pos) {
+		p.removed = false;
+		buckets.computeIfAbsent(pos, k -> new Bucket(p.pos)).addPixel(p);
+		p.moveTo(pos);
 	}
-	void remove(PhysicsPixel p) {
-		buckets.get(p.pos).removePixel(p);//TODO remove bucket
+	void remove(PhysicsPixel p, Coord pos) {
+		p.removed = true;
+		buckets.get(pos).removePixel(p);//TODO remove bucket
 	}
-	void move(PhysicsPixel p, Coord pos) {
-		remove(p);
-		p.pos = pos;
-		add(p);
+	void move(PhysicsPixel p, Coord from, Coord to) {
+		remove(p, from);
+		p.moveTo(to);
+		add(p, to);
 	}
-	void queueAdd(PhysicsPixel p) {
-		addQueue.push(p);
+	void queueAdd(PhysicsPixel p, Coord pos) {
+		addQueue.push(new QueueAdd(p, pos));
 	}
-	void queueRemove(PhysicsPixel p) {
-		removeQueue.push(p);
+	void queueRemove(PhysicsPixel p, Coord pos) {
+		removeQueue.push(new QueueAdd(p, pos));
 	}
-	void queueMove(PhysicsPixel p, Coord pos) {
-		moveQueue.push(new PixelMove(p, pos));
+	void queueMove(PhysicsPixel p, Coord from, Coord to) {
+		moveQueue.push(new QueueMove(p, from, to));
 	}
 
 	Set<PhysicsPixel> collision(Coord pos, int collisionLayer) {
@@ -209,7 +223,7 @@ class Player {
 
 		if (controller.mouse1()) {
 			FloatCoord vel = Utility.normalize(renderer.transformScreenPoint(controller.mousePos()));
-			model.add(new StandardGoodProjectile(model, new Coord(getCameraPos()), 300, vel.x, vel.y));
+			model.add(new StandardGoodProjectile(model, 300, vel.x, vel.y), new Coord(getCameraPos()));
 		}
 	}
 	FloatCoord getCameraPos() {

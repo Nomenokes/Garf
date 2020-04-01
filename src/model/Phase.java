@@ -6,8 +6,7 @@ import java.awt.Color;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
 
 abstract class Phase {
 	protected Model model;
@@ -61,7 +60,7 @@ abstract class TransitionPhase extends TimedPhase {
 
 class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPosition {
 	static class FaceReader implements Utility.PixelReader {
-		private LinkedList<BiFunction<Model, PixelRotator.RotationalSuperPosition, PhysicsPixel>> pixels = new LinkedList<>();
+		private LinkedList<BiConsumer<Model, PixelRotator.RotationalSuperPosition>> pixels = new LinkedList<>();
 		private Set<Integer> trailing = new HashSet<>();
 		private int height;
 		@Override
@@ -72,7 +71,7 @@ class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPositi
 		public void add(int x, int y, Color color) {
 			if (!trailing.contains(y)) {
 				trailing.add(y);
-				pixels.push((model, rot) -> new TrailingFacePixel(
+				pixels.push((model, rot) -> model.add(new TrailingFacePixel(
 						model,
 						new Coord(x, y),
 						color,
@@ -82,21 +81,21 @@ class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPositi
 						Math.abs((float)y / height),
 						TRAIL_LENGTH,
 						TRAIL_ADD
-				));
+				), new Coord(x, y)));
 			} else {
-				pixels.push((model, rot) -> new FacePixel(
+				pixels.push((model, rot) -> model.add(new FacePixel(
 						model,
 						new Coord(x, y),
 						color,
 						FACE_LIFE,
 						rot
-				));
+				), new Coord(x, y)));
 			}
 //			pixels.push(rot -> new StandardEvilProjectile(new Coord(x, y), 1000, 0.2f, 0.2f));
 		}
 
 		void create(Model model, PixelRotator.RotationalSuperPosition caller) {
-			pixels.forEach(f -> model.add(f.apply(model, caller)));
+			pixels.forEach(f -> f.accept(model, caller));
 		}
 	}
 	private static FaceReader FACE_CREATOR = new FaceReader();

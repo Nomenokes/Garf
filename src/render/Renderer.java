@@ -41,8 +41,8 @@ public class Renderer extends JFrame implements IRenderer {
 		this.canvas = new Canvas();
 		
 		Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
-		int dWidth = (int)(d.width * 0.9);
-		int dHeight = (int)(d.height * 0.9);
+		int dWidth = (int)(d.width * 0.5);
+		int dHeight = (int)(d.height * 0.5);
 		float scaleWidth = (float)dWidth / width;
 		float scaleHeight = (float)dHeight / height;
 		int min = scaleWidth < scaleHeight ? dWidth : dHeight;
@@ -50,7 +50,7 @@ public class Renderer extends JFrame implements IRenderer {
 		canvas.setSize(new Dimension(min, min));
 		
 		this.add(new Panel(){{ add(canvas); }});
-		this.setExtendedState(JFrame.MAXIMIZED_BOTH);;
+		//this.setExtendedState(JFrame.MAXIMIZED_BOTH);;
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setVisible(true);
 		canvas.setBackground(Color.YELLOW);
