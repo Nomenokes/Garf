@@ -12,7 +12,6 @@ class PhysicsPixel {
 	protected boolean dead;
 	protected final Model model;
 	
-	boolean removed;
 	
 	PhysicsPixel(Model model, Color color, int priority, int collisionLayer) {
 		this.model = model;
@@ -20,12 +19,10 @@ class PhysicsPixel {
 		this.priority = priority;
 		this.collisionLayer = collisionLayer;
 		this.dead = false;
-		removed = false;
 	}
 	
 	void tick() {
-		if(removed) System.out.println("t");
-		if(dead) throw new IllegalStateException("A pixel has been ticked after dying");
+		
 	}
 	void die() {
 		if (!dead) model.queueRemove(this);
@@ -65,17 +62,17 @@ abstract class TrailingPixel extends TrailPixel {
 	void tick(){
 		super.tick();
 		if(!dead) {
-			FloatCoord oldPos = truePos;
-			FloatCoord newPos = move();
-			Coord newIntPos = new Coord(newPos);
-			if (!roundedPos.equals(newIntPos)) {
-				float distX = (newPos.x - oldPos.x);
-				float distY = (newPos.y - oldPos.y);
+			FloatCoord oldTruePos = truePos;
+			FloatCoord newTruePos = move();
+			Coord newRoundedPos = new Coord(newTruePos);
+			if (!roundedPos.equals(newRoundedPos)) {
+				float distX = (newTruePos.x - oldTruePos.x);
+				float distY = (newTruePos.y - oldTruePos.y);
 				float distance = (float)Math.sqrt(distX * distX + distY * distY);
 				float incX = distX / distance;
 				float incY = distY / distance;
-				float x = oldPos.x;
-				float y = oldPos.y;
+				float x = oldTruePos.x;
+				float y = oldTruePos.y;
 
 				for (int i = 0; i <= distance; i++) {
 					x += incX;
@@ -85,10 +82,11 @@ abstract class TrailingPixel extends TrailPixel {
 				}
 
 				if (!dead) {
-					model.queueMove(this, newIntPos);
+					model.queueMove(this, newRoundedPos);
 				}
 			}
-			truePos = newPos;
+			truePos = newTruePos;
+			roundedPos = newRoundedPos;
 		}
 	}
 	

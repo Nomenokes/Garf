@@ -58,9 +58,6 @@ public class Model {
 			}
 			return ret;
 		}
-		void tick() {
-			byPriority.forEach(PhysicsPixel::tick);
-		}
 
 		void addPixel(PhysicsPixel p) {
 			byLayer.computeIfAbsent(p.collisionLayer, k -> new HashSet<>()).add(p);
@@ -108,8 +105,7 @@ public class Model {
 		phase = phase.tick();
 		player.move(controller, renderer);
 
-		int size;
-		pixelsByCoord.forEach((coord, bucket) -> bucket.tick());
+		coordsByPixel.forEach((p, c) -> p.tick());
 
 		int length = addQueue.size();
 		for (int i = 0; i < length; i++) {
@@ -118,7 +114,8 @@ public class Model {
 		}
 		length = removeQueue.size();
 		for (int i = 0; i < length; i++) {
-			remove(removeQueue.pop());
+			PhysicsPixel p = removeQueue.pop();
+			remove(p);
 		}
 		length = moveQueue.size();
 		for (int i = 0; i < length; i++) {
@@ -134,14 +131,13 @@ public class Model {
 	}
 
 	void add(PhysicsPixel p, Coord pos) {
-		p.removed = false;
 		coordsByPixel.put(p, pos);
 		pixelsByCoord.computeIfAbsent(pos, k -> new Bucket(pos)).addPixel(p);
 	}
 	void remove(PhysicsPixel p) {
-		p.removed = true;
 		Coord pos = coordsByPixel.get(p);
 		if(pos == null) throw new IllegalStateException("attempted to remove untracked pixel");
+		coordsByPixel.remove(p);
 		pixelsByCoord.get(pos).removePixel(p);//TODO remove bucket
 	}
 	void move(PhysicsPixel p, Coord to) {
@@ -194,7 +190,7 @@ class Player {
 		if (controller.mouse1()) {
 			FloatCoord vel = Utility.normalize(renderer.transformScreenPoint(controller.mousePos()));
 			Coord pos = new Coord(getCameraPos());
-			model.add(new StandardGoodProjectile(model, new FloatCoord(pos), 300, vel.x, vel.y), pos);
+			model.add(new StandardGoodProjectile(model, new FloatCoord(pos), 50, vel.x, vel.y), pos);
 		}
 	}
 	FloatCoord getCameraPos() {
