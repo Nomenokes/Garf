@@ -6,6 +6,7 @@ import java.awt.Color;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 abstract class Phase {
@@ -60,7 +61,7 @@ abstract class TransitionPhase extends TimedPhase {
 
 class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPosition {
 	static class FaceReader implements Utility.PixelReader {
-		private LinkedList<Function<PixelRotator.RotationalSuperPosition, PhysicsPixel>> pixels = new LinkedList<>();
+		private LinkedList<BiFunction<Model, PixelRotator.RotationalSuperPosition, PhysicsPixel>> pixels = new LinkedList<>();
 		private Set<Integer> trailing = new HashSet<>();
 		private int height;
 		@Override
@@ -71,7 +72,8 @@ class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPositi
 		public void add(int x, int y, Color color) {
 			if (!trailing.contains(y)) {
 				trailing.add(y);
-				pixels.push(rot -> new TrailingFacePixel(
+				pixels.push((model, rot) -> new TrailingFacePixel(
+						model,
 						new Coord(x, y),
 						color,
 						FACE_LIFE,
@@ -82,7 +84,8 @@ class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPositi
 						TRAIL_ADD
 				));
 			} else {
-				pixels.push(rot -> new FacePixel(
+				pixels.push((model, rot) -> new FacePixel(
+						model,
 						new Coord(x, y),
 						color,
 						FACE_LIFE,
@@ -93,7 +96,7 @@ class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPositi
 		}
 
 		void create(Model model, PixelRotator.RotationalSuperPosition caller) {
-			pixels.forEach(f -> model.add(f.apply(caller)));
+			pixels.forEach(f -> model.add(f.apply(model, caller)));
 		}
 	}
 	private static FaceReader FACE_CREATOR = new FaceReader();

@@ -5,6 +5,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.Arrays;
 
 public class Controller implements MouseListener, KeyListener, IController {
 	private boolean m1, m2, l, r, u, d, space;

@@ -1,6 +1,7 @@
 package model;
 
 import control.IController;
+import main.Utility;
 import render.IRenderer;
 
 import java.awt.Color;
@@ -12,9 +13,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Model {
-	static final int LAYER_EVIL_PROJECTILE = 1, 
+	static final int LAYER_EVIL_PROJECTILE = 1,
 			LAYER_EVIL_TRAIL = 2,
 			LAYER_EVIL_INVINCIBLE_EYE = 3,
 			LAYER_EVIL_TEMP_EYE = 4,
@@ -30,8 +32,9 @@ public class Model {
 	}
 	static final ColorPriority PRIORITY_ORANGE_EVIL_PROJECTILE = new ColorPriority(5, Color.ORANGE),
 			PRIORITY_BLACK_TRAIL = new ColorPriority(2, Color.BLACK),
-			PRIORITY_TEXTURE_PROJECTILE = new ColorPriority(4, null);
-	
+			PRIORITY_TEXTURE_PROJECTILE = new ColorPriority(4, null),
+			PRIORITY_GOOD_BLUE_PROJECTILE = new ColorPriority(8, Color.BLUE);
+
 	private static class Bucket {
 		// organized by collision layer
 		private Map<Integer, Set<PhysicsPixel>> collisionPixels;
@@ -41,7 +44,10 @@ public class Model {
 		Bucket(Coord coord) {
 			this.coord = coord;
 			collisionPixels = new HashMap<>();
-			renderPixels = new TreeSet<>((p1, p2) -> p1.priority == p2.priority ? p2.hashCode() - p1.hashCode() : p2.priority - p1.priority);
+			renderPixels = new TreeSet<>((p1, p2) ->
+					p1.priority == p2.priority ?
+							p2.hashCode() - p1.hashCode() : //if priority is same, subtract hash codes to take equality into account
+							p2.priority - p1.priority); //else order by priority
 		}
 
 		Color render() {
@@ -54,24 +60,44 @@ public class Model {
 			return ret;
 		}
 		void tick(Model model) {
-			int size = renderPixels.size();
-			renderPixels.forEach(physicsPixel -> physicsPixel.tick(model));
-			assert size == renderPixels.size();
+			int size;
+			if(Utility.ASSERTIONS) size = renderPixels.size();
+			renderPixels.forEach(PhysicsPixel::tick);
+			if(Utility.ASSERTIONS) assert size == renderPixels.size();
 		}
 
 		void addPixel(PhysicsPixel p) {
+			int size;
+			if(Utility.ASSERTIONS) size = renderPixels.size();
 			collisionPixels.computeIfAbsent(p.collisionLayer, k -> new HashSet<>()).add(p);
 			renderPixels.add(p);
+			if(Utility.ASSERTIONS){
+				size++;
+				AtomicInteger after = new AtomicInteger();
+				collisionPixels.forEach((i, sp) -> after.addAndGet(sp.size()));
+				assert size == after.get();
+				assert size == renderPixels.size();
+			}
 		}
 		void removePixel(PhysicsPixel p) {
-			collisionPixels.get(p.collisionLayer).remove(p);
+			int size;
+			if(Utility.ASSERTIONS) size = renderPixels.size();
+			collisionPixels.get(p.collisionLayer).remove(p);//TODO remove sub-bucket
 			renderPixels.remove(p);
+			if(Utility.ASSERTIONS){
+				size--;
+				AtomicInteger after = new AtomicInteger();
+				collisionPixels.forEach((i, sp) -> after.addAndGet(sp.size()));
+				assert size == after.get();
+				assert size == renderPixels.size();
+			}
 		}
 		Set<PhysicsPixel> collision(int collisionLayer) {
 			Set<PhysicsPixel> ret = collisionPixels.get(collisionLayer);
 			return ret == null ? Collections.emptySet() : ret;
 		}
 	}
+	//a stored call to move
 	private static class PixelMove {
 		final PhysicsPixel pixel;
 		final Coord pos;
@@ -93,18 +119,19 @@ public class Model {
 		addQueue = new LinkedList<>();
 		removeQueue = new LinkedList<>();
 		moveQueue = new LinkedList<>();
-		player = new Player(0, 0, 1);
+		player = new Player(this, 0, 0, 1);
 		phase = new FacePhase(this, 1, null, null, new FloatCoord(0, 0), 0);
 	}
 
-	public void tick(IController controller) {
+	public void tick(IController controller, IRenderer renderer) {
 		phase = phase.tick();
-		player.move(this, controller);
-		
-		int size = buckets.size();
+		player.move(controller, renderer);
+
+		int size;
+		if(Utility.ASSERTIONS) size = buckets.size();
 		buckets.forEach((coord, bucket) -> bucket.tick(this));
-		assert size == buckets.size();
-		
+		if(Utility.ASSERTIONS) assert size == buckets.size();
+
 		int length = addQueue.size();
 		for (int i = 0; i < length; i++) {
 			add(addQueue.pop());
@@ -157,31 +184,38 @@ public class Model {
 class Player {
 	private static final float COS45 = 0.70710678118f;
 	private float x, y, speed;
-	Player(float x, float y, float speed){
+	private Model model;
+	Player(Model model, float x, float y, float speed) {
+		this.model = model;
 		this.x = x;
 		this.y = y;
 		this.speed = speed;
 	}
-	void move(Model model, IController controller){
+	void move(IController controller, IRenderer renderer) {
 		float moveX = 0;
 		float moveY = 0;
-		if(controller.right() != controller.left()){
-			if(controller.up() != controller.down()) moveX = speed * COS45;
+		if (controller.right() != controller.left()) {
+			if (controller.up() != controller.down()) moveX = speed * COS45;
 			else moveX = speed;
-			if(controller.left()) moveX = -moveX;
+			if (controller.left()) moveX = -moveX;
 		}
-		if(controller.up() != controller.down()){
-			if(controller.left() != controller.right()) moveY = speed * COS45;
+		if (controller.up() != controller.down()) {
+			if (controller.left() != controller.right()) moveY = speed * COS45;
 			else moveY = speed;
-			if(controller.up()) moveY = -moveY;
+			if (controller.up()) moveY = -moveY;
 		}
 		x += moveX;
 		y += moveY;
+
+		if (controller.mouse1()) {
+			FloatCoord vel = Utility.normalize(renderer.transformScreenPoint(controller.mousePos()));
+			model.add(new StandardGoodProjectile(model, new Coord(getCameraPos()), 300, vel.x, vel.y));
+		}
 	}
-	FloatCoord getCameraPos(){
+	FloatCoord getCameraPos() {
 		return new FloatCoord(x, y);
 	}
-	FloatCoord getTargetPos(){
+	FloatCoord getTargetPos() {
 		return new FloatCoord(x, y);
 	}
 }

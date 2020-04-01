@@ -31,7 +31,7 @@ public class Runner implements Runnable {
 			current = System.nanoTime();
 			if (current >= last + tickTime) {
 				last = current;
-				model.tick(controller);
+				model.tick(controller, renderer);
 				render++;
 				if(render >= ticksPerRender){
 					render = 0;

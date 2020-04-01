@@ -1,5 +1,6 @@
 package main;
 
+import model.FloatCoord;
 import render.Renderer;
 
 import javax.imageio.ImageIO;
@@ -7,6 +8,7 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 
 public class Utility {
+	public static final boolean ASSERTIONS = false;//TODO figure out a better way to toggle expensive assert logic
 	private Utility(){}
 
 	public static BufferedImage readFile(String name){
@@ -44,5 +46,13 @@ public class Utility {
 				pixelsIndex++;
 			}
 		}
+	}
+	
+	public static float magnitude(FloatCoord c){
+		return (float)Math.sqrt(c.x * c.x + c.y * c.y);
+	}
+	public static FloatCoord normalize(FloatCoord c){
+		float mag = magnitude(c);
+		return new FloatCoord(c.x / mag, c.y / mag);
 	}
 }

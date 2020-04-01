@@ -1,5 +1,6 @@
 package model;
 
+import java.awt.Point;
 import java.util.Objects;
 
 public class FloatCoord {
@@ -9,6 +10,9 @@ public class FloatCoord {
 		this.y = y;
 	}
 	public FloatCoord(Coord copy){
+		this(copy.x, copy.y);
+	}
+	public FloatCoord(Point copy){
 		this(copy.x, copy.y);
 	}
 	@Override

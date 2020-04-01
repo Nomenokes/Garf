@@ -1,10 +1,13 @@
 package render;
 
 import model.Coord;
+import model.FloatCoord;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -84,7 +87,7 @@ public class Renderer extends JFrame implements IRenderer {
 		int endX = startX + width;
 		int endY = startY + width;
 		for (int y = startY; y < endY; y++) {
-				for (int x = startX; x < endX; x++) {
+				for (int x = startX; x < endX; x++) {//TODO efficiency?
 				Color c = backgroundColor;
 
 				// if entry exists for this pixel, find the min priority and replace c
@@ -110,11 +113,25 @@ public class Renderer extends JFrame implements IRenderer {
 		g.drawImage(i, 0, 0, canvas.getWidth(), canvas.getHeight(), null);
 		g.dispose();
 		b.show();
-		requestFocus();
+		canvas.requestFocus();
+	}
+	
+	@Override
+	public void addMouseListener(MouseListener listener){
+		canvas.addMouseListener(listener);
+	}
+	
+	@Override
+	public void addKeyListener(KeyListener listener){
+		canvas.addKeyListener(listener);
 	}
 	
 	@Override
 	public void clear(){
 		pixelMap = new HashMap<>();
+	}
+	@Override
+	public FloatCoord transformScreenPoint(Point point) {
+		return new FloatCoord(point.x * width + centerX, point.y * height + centerY);
 	}
 }

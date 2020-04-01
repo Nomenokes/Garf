@@ -17,9 +17,11 @@ class PhysicsPixel {
 	
 	//protected is used to mark that only subclasses should access (think c++ protected)
 	protected boolean dead;
+	protected final Model model;
 	
-	PhysicsPixel(Coord pos, Color color, int priority, int collisionLayer) {
+	PhysicsPixel(Model model, Coord pos, Color color, int priority, int collisionLayer) {
 		if (pos == null) throw new IllegalArgumentException("pos is null");
+		this.model = model;
 		this.pos = pos;
 		this.color = color;
 		this.priority = priority;
@@ -27,8 +29,8 @@ class PhysicsPixel {
 		this.dead = false;
 	}
 	
-	void tick(Model model) {}
-	void die(Model model) {
+	void tick() {}
+	void die() {
 		if (!dead) model.queueRemove(this);
 		dead = true;
 	}
@@ -41,28 +43,28 @@ class PhysicsPixel {
 
 class TrailPixel extends PhysicsPixel {
 	protected int life;
-	TrailPixel(Coord pos, Color color, int priority, int collisionLayer, int life) {
-		super(pos, color, priority, collisionLayer);
+	TrailPixel(Model model, Coord pos, Color color, int priority, int collisionLayer, int life) {
+		super(model, pos, color, priority, collisionLayer);
 		this.life = life;
 	}
 
 	@Override
-	void tick(Model model) {
-		super.tick(model);
+	void tick() {
+		super.tick();
 		life--;
-		if (life < 0) die(model);
+		if (life < 0) die();
 	}
 }
 
 abstract class TrailingPixel extends TrailPixel {
 	protected FloatCoord truePos;
-	TrailingPixel(Coord pos, Color color, int priority, int collisionLayer, int life){
-		super(pos, color, priority, collisionLayer, life);
+	TrailingPixel(Model model, Coord pos, Color color, int priority, int collisionLayer, int life){
+		super(model, pos, color, priority, collisionLayer, life);
 		this.truePos = new FloatCoord(pos);
 	}
 	@Override
-	void tick(Model model){
-		super.tick(model);
+	void tick(){
+		super.tick();
 		if(!dead) {
 			FloatCoord oldPos = truePos;
 			FloatCoord newPos = move();
@@ -79,7 +81,7 @@ abstract class TrailingPixel extends TrailPixel {
 				for (int i = 0; i <= distance; i++) {
 					x += incX;
 					y += incY;
-					passThrough(model, new Coord(new FloatCoord(x, y)));
+					passThrough(new Coord(new FloatCoord(x, y)));
 					if (dead) break;
 				}
 
@@ -91,7 +93,7 @@ abstract class TrailingPixel extends TrailPixel {
 		}
 	}
 	
-	protected abstract void passThrough(Model model, Coord pos);
+	protected abstract void passThrough(Coord pos);
 
 	protected abstract FloatCoord move();
 }
