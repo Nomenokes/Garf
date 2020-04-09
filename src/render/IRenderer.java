@@ -16,6 +16,5 @@ public interface IRenderer {
 	 * Signal the renderer to prepare for a new frame to be rendered. Any calls to {@link draw} between calling this method and calling {@link render} should be rendered on the new frame.
 	 */
 	public void clear();
-	public FloatCoord transformScreenPoint(Point point);
-	//TODO find a better place for turning screen coordinates into game coordinates (maybe keep track in model? maybe restrict clicks to directional only?)
+	public FloatCoord mousePosition();
 }

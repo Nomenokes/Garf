@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-abstract class Phase {
+class Phase {
 	protected Model model;
 	protected int difficulty;
 	Phase(Model model, int difficulty){
@@ -128,6 +128,7 @@ class FacePhase extends TimedPhase implements PixelRotator.RotationalSuperPositi
 	@Override
 	public double rotation() { return rotation; }
 }
+
 
 //class MouthPhase extends TimedPhase {
 //	

@@ -1,5 +1,6 @@
 package control;
 
+import javax.swing.SwingUtilities;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -117,10 +118,4 @@ public class Controller implements MouseListener, KeyListener, IController {
 	public boolean mouse1() { return m1; }
 	@Override
 	public boolean mouse2() { return m2; }
-	@Override
-	public Point mousePos() {
-		Point loc = MouseInfo.getPointerInfo().getLocation();
-		Point sub = onto.getLocationOnScreen();
-		return new Point(loc.x - sub.x, loc.y - sub.y);
-	}
 }

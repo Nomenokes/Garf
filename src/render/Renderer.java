@@ -131,7 +131,12 @@ public class Renderer extends JFrame implements IRenderer {
 		pixelMap = new HashMap<>();
 	}
 	@Override
-	public FloatCoord transformScreenPoint(Point point) {
-		return new FloatCoord(point.x * width + centerX, point.y * height + centerY);
+	public FloatCoord mousePosition() {
+		Point p = MouseInfo.getPointerInfo().getLocation();
+		Point sub = canvas.getLocation();
+		Point rel = new Point(p.x - sub.x, p.y - sub.y);
+		FloatCoord scale = new FloatCoord((float)canvas.getWidth() / width, (float)canvas.getHeight() / height);
+		return new FloatCoord(rel.x / scale.x + centerX - (width / 2f), rel.y / scale.y + centerY - (height / 2f));
 	}
+
 }

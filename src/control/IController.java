@@ -9,5 +9,4 @@ public interface IController {
 	public boolean down();
 	public boolean mouse1();
 	public boolean mouse2();
-	public Point mousePos();
 }

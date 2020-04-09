@@ -50,13 +50,9 @@ public class Model {
 		}
 
 		Color render() {
-			Color ret;
-			if (byPriority.isEmpty()) ret = null;
-			else {
-				PhysicsPixel first = byPriority.first();
-				ret = first.color;
-			}
-			return ret;
+			if (byPriority.isEmpty()) return null;
+			PhysicsPixel first = byPriority.first();
+			return first.color;
 		}
 
 		void addPixel(PhysicsPixel p) {
@@ -83,7 +79,7 @@ public class Model {
 		}
 	}
 
-	private Map<Coord, Bucket> pixelsByCoord;
+	private Map<Coord, Bucket> pixelsByCoord; //TODO integer overflow
 	private Map<PhysicsPixel, Coord> coordsByPixel;
 	private LinkedList<QueueMove> addQueue;
 	private LinkedList<PhysicsPixel> removeQueue;
@@ -98,7 +94,8 @@ public class Model {
 		removeQueue = new LinkedList<>();
 		moveQueue = new LinkedList<>();
 		player = new Player(this, 0, 0, 1);
-		phase = new FacePhase(this, 1, null, null, new FloatCoord(0, 0), 0);
+		phase = /*/new Phase(this, 1);/*/new FacePhase(this, 1, null, null, new FloatCoord(0, 0), 0);/**/
+		add(new DeadlyTrail(this, new Coord(1, 1), Color.red, 10000), new Coord(1,1));
 	}
 
 	public void tick(IController controller, IRenderer renderer) {
@@ -107,20 +104,21 @@ public class Model {
 
 		coordsByPixel.forEach((p, c) -> p.tick());
 
+		HashSet<PhysicsPixel> moved = new HashSet<>();
 		int length = addQueue.size();
 		for (int i = 0; i < length; i++) {
 			QueueMove pop = addQueue.pop();
-			add(pop.pixel, pop.pos);
+			if(moved.add(pop.pixel)) add(pop.pixel, pop.pos);
 		}
 		length = removeQueue.size();
 		for (int i = 0; i < length; i++) {
 			PhysicsPixel p = removeQueue.pop();
-			remove(p);
+			if(moved.add(p)) remove(p);
 		}
 		length = moveQueue.size();
 		for (int i = 0; i < length; i++) {
 			QueueMove pop = moveQueue.pop();
-			move(pop.pixel, pop.pos);
+			if(moved.add(pop.pixel)) move(pop.pixel, pop.pos);
 		}
 	}
 	public void render(IRenderer renderer) {
@@ -188,9 +186,10 @@ class Player {
 		y += moveY;
 
 		if (controller.mouse1()) {
-			FloatCoord vel = Utility.normalize(renderer.transformScreenPoint(controller.mousePos()));
+			FloatCoord mouse = renderer.mousePosition();
+			FloatCoord vel = Utility.normalize(new FloatCoord(mouse.x - x, mouse.y - y));
 			Coord pos = new Coord(getCameraPos());
-			model.add(new StandardGoodProjectile(model, new FloatCoord(pos), 50, vel.x, vel.y), pos);
+			model.add(new StandardGoodProjectile(model, new FloatCoord(pos), 500, vel.x, vel.y), pos);
 		}
 	}
 	FloatCoord getCameraPos() {
